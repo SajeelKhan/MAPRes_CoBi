@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Thrift.Collections;
 using Thrift.Transport;
 using Thrift.Server;
+using System.Collections;
 
 namespace MAPResServer
 {
@@ -17,10 +18,13 @@ namespace MAPResServer
             {
                 MAPResServer ms = new MAPResServer();
                 MAPResService.Processor process = new MAPResService.Processor(ms);
-                TServerTransport sT = new TServerSocket(4040);
+                TServerTransport sT = new TServerSocket(9091);
                 TThreadedServer server = new TThreadedServer(process, sT);
                 Console.WriteLine("Server Started");
                 server.Serve();
+                ms.getStandardAminoAcidSet();
+                ms.counter();
+                
             }
             catch (Exception e)
             {
@@ -43,42 +47,42 @@ namespace MAPResServer
 
         public string getDeviationParameter(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getDOEC(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getExpectedCount(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getExpectedFrequency(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getExpectedFrequencyAsPerc(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getObservedCount(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getObservedFrequency(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public string getObservedFrequencyAsPerc(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public List<string> getPeptidesDataset()
@@ -103,7 +107,7 @@ namespace MAPResServer
 
         public string getSigma(string ModSite)
         {
-            throw new NotImplementedException();
+            return ModSite + "From Server";
         }
 
         public List<string> getSignificantlyPreferredSitesMatrix()
@@ -141,14 +145,55 @@ namespace MAPResServer
             throw new NotImplementedException();
         }
 
+        string AnalysisTitle;
+        string AnalystName;
+        int PeptideWindowSize;
+        THashSet<string> ModificationSites;
+        THashSet<string> AminoAcidsSet = new THashSet<string>();
+        string path;
         public void setProjectProfileWithPseudoAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, THashSet<string> ListOfPseudoAminoAcids, string path)
         {
-            throw new NotImplementedException();
+            this.AnalysisTitle = AnalysisTitle;
+            this.AnalystName = AnalystName;
+            this.PeptideWindowSize = PeptideWindowSize;
+            this.ModificationSites = ModificationSites;
+            AminoAcidsSet = ListOfPseudoAminoAcids;
+            this.path = path;
         }
 
         public void setProjectProfileWithStandardAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, string path)
         {
-            throw new NotImplementedException();
+            this.AnalysisTitle = AnalysisTitle;
+            this.AnalystName = AnalystName;
+            this.PeptideWindowSize = PeptideWindowSize;
+            this.ModificationSites = ModificationSites;
+            this.path = path;
+            getStandardAminoAcidSet();
         }
+        public void getStandardAminoAcidSet()
+        {
+            AminoAcidsSet.Add("A");
+            AminoAcidsSet.Add("C");
+            AminoAcidsSet.Add("D");
+            AminoAcidsSet.Add("E");
+            AminoAcidsSet.Add("F");
+            AminoAcidsSet.Add("G");
+            AminoAcidsSet.Add("H");
+            AminoAcidsSet.Add("I");
+            AminoAcidsSet.Add("K");
+            AminoAcidsSet.Add("L");
+            AminoAcidsSet.Add("M");
+            AminoAcidsSet.Add("N");
+            AminoAcidsSet.Add("P");
+            AminoAcidsSet.Add("Q");
+            AminoAcidsSet.Add("R");
+            AminoAcidsSet.Add("S");
+            AminoAcidsSet.Add("T");
+            AminoAcidsSet.Add("V");
+            AminoAcidsSet.Add("W");
+            AminoAcidsSet.Add("Y");
+            AminoAcidsSet.Add("-");
+        }
+        
     }
 }

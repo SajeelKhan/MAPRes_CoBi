@@ -10,6 +10,7 @@ using System.Xml;
 using System.Data;
 using System.IO;
 using ExcelDataReader;
+using System.Data.OleDb;
 
 namespace MAPResServer
 {
@@ -17,30 +18,32 @@ namespace MAPResServer
     {
         static void Main(string[] args)
         {
-            try
-            {
-                MAPResServer ms = new MAPResServer();
+            //try
+            //{
+                MAPResServer ms =  new MAPResServer();
                 MAPResService.Processor process = new MAPResService.Processor(ms);
                 TServerTransport sT = new TServerSocket(9091);
                 TThreadedServer server = new TThreadedServer(process, sT);
                 Console.WriteLine("Server Started");
-                ms.loginToServer("Sajeel", "1234");
-                var set = new THashSet<String>();
-                set.Add("A");
-                set.Add("B");
-                set.Add("C");
-                set.Add("D");
-                set.Add("E");
-                ms.setProjectProfileWithStandardAminoAcids("FistAnalysis", "Sajeel",10 ,set, "thisPath");
-                ms.openProjectLocation(@"F:\Results\Acetylation\Dataset File\Acetylation (Refined).xlsx");
-                ms.runPreferenceEstimationProcess();
+                //ms.loginToServer("Sajeel", "1234");
+                //var set = new THashSet<String>();
+                //set.Add("S");
+                //set.Add("T");
+                //set.Add("Y");
+                //ms.setProjectProfileWithStandardAminoAcids("FistAnalysis", "Sajeel",10 ,set, "thisPath");
+                //ms.openProjectLocation(@"F:\Results\Carboxylation\XML Files\CarboxylEncoded.XML");
+              //  ms.getModsite("S");
+            
+            //ms.runPreferenceEstimationProcess();
+            //ms.SaveProject();
+            //ms.getDeviationParameter("S");
                 server.Serve();
                 
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
+            //}
+            //catch (Exception e)
+            //{
+              //  Console.WriteLine(e.StackTrace);
+            //}
         }
     }
 
@@ -48,24 +51,40 @@ namespace MAPResServer
     {
         private DataTable dtCombinedResultTable;
 
-        private DataTable dtObserveredFrequencyTable;
-        private DataTable dtObserveredCountTable;
-        private DataTable dtPercentageObserveredFrequencyTable;
-        private DataTable dtPercentageExpectedFrequencyTable;
-        private DataTable dtExpectedFrequencyTable;
-        private DataTable dtDOECTable;
-        private DataTable dtDeveiationParameterTable;
-        private DataTable dtSigmaTable;
-        private DataTable dtPreferredSitesTable;
-        private DataTable dtS_PreferredSitesTable;
-        private DataTable dtExpectedCountTable;
-        private DataTable dtCountPerAminoAcidTable;
-        private DataTable dtAminoAcidsAndPreferredPositions;
 
-        public List<string> getAminoAcidsandPreferredPositions()
+
+        DataTable dtProteins;
+        DataTable dtPeptides;
+
+        PreferenceResultSet prs;
+
+        private Dictionary<string, Subject> _subjectsHash;
+
+        public Dictionary<string, Subject> SubjectsHash
         {
-            throw new NotImplementedException();
+            set
+            {
+                _subjectsHash = value;
+            }
+            get
+            {
+                return this._subjectsHash;
+            }
         }
+
+        public DataTable GetProteinsDataTable()
+        {
+
+            return SubjectsHash[Modsite].ProteinDataTable;
+        }
+
+        public DataTable GetPeptidesDataTable()
+        {
+
+            return SubjectsHash[Modsite].PeptideDataTable;
+        }
+
+        
 
         public List<string> getAssociationRules()
         {
@@ -74,12 +93,27 @@ namespace MAPResServer
 
         public string getDeviationParameter(string ModSite)
         {
-            throw new NotImplementedException();
+            foreach (DataRow row in prs.DeviationParameter.Rows)
+            {
+                foreach (var item in row.ItemArray)
+                {
+                    return item.ToString();
+                }
+            }
+            return "Nothing";
         }
 
         public string getDOEC(string ModSite)
         {
-            throw new NotImplementedException();
+
+            foreach (DataRow row in prs.DOEC.Rows)
+            {
+                foreach (var item in row.ItemArray)
+                {
+                    return item.ToString();
+                }
+            }
+            return "Nothing";
         }
 
         public string getExpectedCount(string ModSite)
@@ -152,42 +186,13 @@ namespace MAPResServer
             throw new NotImplementedException();
         }
 
-        DataTable dtProteins;
-        DataTable dtPeptides;
+        DataTable usd;
         public void openProjectLocation(string location)
         {
-            try
-            {
-                using (var stream = File.Open(location, FileMode.Open, FileAccess.Read))
-                {
-                    // Auto-detect format, supports:
-                    //  - Binary Excel files (2.0-2003 format; *.xls)
-                    //  - OpenXml Excel files (2007 format; *.xlsx)
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
-                    {
-                        // Choose one of either 1 or 2:
-
-                        // 1. Use the reader methods
-                        do
-                        {
-                            while (reader.Read())
-                            {
-                                // reader.GetDouble(0);
-                            }
-                        } while (reader.NextResult());
-
-                        // 2. Use the AsDataSet extension method
-                        var result = reader.AsDataSet();
-
-                        // The result of each spreadsheet is in result.Tables
-                        dtProteins = result.Tables[0];
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
+            var result = new DataSet();
+            result.ReadXml(location);
+            usd = result.Tables[0].Copy();
+            prepareData();
         }
 
         public void runAssociationRuleMiningProcess()
@@ -201,10 +206,245 @@ namespace MAPResServer
             this.Modsite = ModSite;
         }
 
+        
+
+        public void SaveProject()
+        {
+            #region Write to XML File
+            //implement
+            string root = @"D:\CoBi";
+            string subdir = @"D:\CoBi\";
+            subdir = String.Concat(subdir, userName,"\\");
+
+            if (!Directory.Exists(root))
+            {
+                Directory.CreateDirectory(root);
+            }
+
+            if (!Directory.Exists(subdir))
+            {
+                Directory.CreateDirectory(subdir);
+            }
+            subdir = String.Concat(subdir,userName ,".xml");
+
+            using (XmlTextWriter xml = new XmlTextWriter(subdir, Encoding.UTF8))
+                {
+                xml.WriteStartDocument();
+                xml.WriteStartElement("User Name");
+                xml.WriteString(userName);
+
+                xml.WriteStartElement("Analysis Details");
+                xml.WriteElementString("Analysis Title", AnalysisTitle);
+                xml.WriteElementString("Analyst Name", AnalystName);
+                
+                foreach (String str in ModificationSites)
+                {
+                    xml.WriteElementString("Modification Sites", str);
+                }
+
+                foreach (String str in AminoAcidsSet)
+                {
+                    xml.WriteElementString("Amino Acid Set", str);
+                }
+
+                xml.WriteEndElement();
+                xml.WriteEndDocument();
+            }
+            #endregion
+            
+            prs.CombinedResult.WriteXml(@"D:\CoBi\Sajeel\Results.xml");
+        }
+
+        string AnalysisTitle;
+        string AnalystName;
+        int PeptideWindowSize;
+        THashSet<string> ModificationSites;
+        THashSet<string> AminoAcidsSet = new THashSet<string>();
+        string path;
+
+        public void setProjectProfileWithPseudoAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, THashSet<string> ListOfPseudoAminoAcids, string path)
+        {
+            this.AnalysisTitle = AnalysisTitle;
+            this.AnalystName = AnalystName;
+            this.PeptideWindowSize = PeptideWindowSize;
+            this.ModificationSites = ModificationSites;
+            AminoAcidsSet = ListOfPseudoAminoAcids;
+            this.path = path;
+        }
+
+        public void setProjectProfileWithStandardAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, string path)
+        {
+            this.AnalysisTitle = AnalysisTitle;
+            this.AnalystName = AnalystName;
+            this.PeptideWindowSize = PeptideWindowSize;
+            this.ModificationSites = ModificationSites;
+            this.path = path;
+            getStandardAminoAcidSet();
+            
+        }
+        public void getStandardAminoAcidSet()
+        {
+            #region Standard Set Defination
+            AminoAcidsSet.Add("A");
+            AminoAcidsSet.Add("C");
+            AminoAcidsSet.Add("D");
+            AminoAcidsSet.Add("E");
+            AminoAcidsSet.Add("F");
+            AminoAcidsSet.Add("G");
+            AminoAcidsSet.Add("H");
+            AminoAcidsSet.Add("I");
+            AminoAcidsSet.Add("K");
+            AminoAcidsSet.Add("L");
+            AminoAcidsSet.Add("M");
+            AminoAcidsSet.Add("N");
+            AminoAcidsSet.Add("P");
+            AminoAcidsSet.Add("Q");
+            AminoAcidsSet.Add("R");
+            AminoAcidsSet.Add("S");
+            AminoAcidsSet.Add("T");
+            AminoAcidsSet.Add("V");
+            AminoAcidsSet.Add("W");
+            AminoAcidsSet.Add("Y");
+            AminoAcidsSet.Add("-");
+            #endregion
+        }
+
+        Dictionary<String, String> users = new Dictionary<string, string>();
+        String userName;
+        public bool loginToServer(string UserName, string passWord)
+        {
+            String pWord;
+            addValues();
+            if (users.ContainsKey(UserName))
+            {
+                pWord = users[UserName];
+                if (pWord == passWord)
+                {
+                    userName = UserName;
+                    return true;
+                }
+            }
+      
+            return false;
+        }
+        public void addValues()
+        {
+            users.Add("Sajeel", "1234");
+            users.Add("Adnan", "12345");
+        }
+        
+        //Step 1: Generate Relevant Datasets
+        private List<Subject> _lstSubjects;
+        public void prepareData()
+        {
+            _lstSubjects = new List<Subject>();
+            for(int i=0; i < ModificationSites.Count; i++)
+            {
+                _lstSubjects.Add(new Subject(ModificationSites.ElementAt(i)));
+            }
+            ApplyTransformation();
+        }
+
+        bool _isUSDNative;
+        //Step 2: Apply Transformation Rules
+        public void ApplyTransformation()
+        {
+            _isUSDNative = usd.Columns.Contains("IMSB_Sequence"); //This means that if the _usd contains "IMSB_Sequence field already, then it means that the sequence is native sequence and there is no need to add "IMSB_Sequence". Therefore next condition will be false if the _usd contains the "IMSB_Sequence" field and no sequence transformation will be performed as it already is".
+
+            if (_isUSDNative == false)
+            {
+                //Do Transformation
+                usd.Columns.Add("IMSB_Sequence");
+                string sequence;
+                SequenceTransformation sequenceTransformation = new SequenceTransformation();
+
+                foreach (DataRow row in usd.Rows)
+                {
+                    sequence = row["Sequence"].ToString();
+                    row["IMSB_Sequence"] = sequenceTransformation.ToIMSBSequence(sequence);
+                }
+                sequenceTransformation = null;
+            }
+            GenerateSubjectOritentedSiteDatasets();
+        }
+
+        //Step 3: Generate Subject Oritented Site Datasets
+        public void GenerateSubjectOritentedSiteDatasets()
+        {
+            DataRow[] rows;
+            List<string> pids = new List<string>();
+            string pid;
+            for (int subjectIndex = 0; subjectIndex < ModificationSites.Count; subjectIndex++)
+            {
+                rows = usd.Select("[ModificationSite] = '" + ModificationSites.ElementAt(subjectIndex) + "'");
+
+                //_lstSubjects[subjectIndex].SitesDataTable = new DataTable(subjects[subjectIndex]);
+                //_lstSubjects[subjectIndex].ProteinDataTable  = new DataTable(subjects[subjectIndex]);
+                _lstSubjects[subjectIndex].SitesDataTable = usd.Clone();
+                _lstSubjects[subjectIndex].ProteinDataTable = usd.Clone();
+
+                foreach (DataRow row in rows)
+                {
+                    _lstSubjects[subjectIndex].SitesDataTable.ImportRow(row);
+                    pid = row["PID"].ToString();
+                    if (pids.Contains(pid) == false)
+                    {
+                        pids.Add(pid);
+                        _lstSubjects[subjectIndex].ProteinDataTable.ImportRow(row);
+                    }
+
+                }
+                pids.Clear();
+            }
+            GenerateSubjectOritentedProteinDatasets();
+        }
+
+        //Step 4: Generate Subject Oritented Protein Datasets
+        public void GenerateSubjectOritentedProteinDatasets()
+        {
+            int colIndex;
+            DataColumn col;
+            for (int subjectIndex = 0; subjectIndex < ModificationSites.Count; subjectIndex++)
+            {
+
+                for (colIndex = 0; colIndex < _lstSubjects[subjectIndex].ProteinDataTable.Columns.Count; colIndex++)
+                {
+                    col = _lstSubjects[subjectIndex].ProteinDataTable.Columns[colIndex];
+                    if (col.ColumnName == "PID" || col.ColumnName == "Sequence" || col.ColumnName == "IMSB_Sequence")
+                    { /*DoNothing. Just Ignore*/}
+                    else
+                    {
+                        _lstSubjects[subjectIndex].ProteinDataTable.Columns.Remove(col);
+                    }
+                }
+            }
+            GenerateSubjectOritentedPeptideDatasets();
+        }
+
+        //Step 5: Generate Subject Oritented Peptide Datasets
+        public void GenerateSubjectOritentedPeptideDatasets()
+        {
+            PeptideGenerator peptideGenerator = new PeptideGenerator(true, this.PeptideWindowSize);
+            int subjectIndex;
+            for (subjectIndex = 0; subjectIndex < ModificationSites.Count; subjectIndex++)
+            {
+                _lstSubjects[subjectIndex].PeptideDataTable = peptideGenerator.ToPeptide(_lstSubjects[subjectIndex].SitesDataTable);
+                _lstSubjects[subjectIndex].PeptideDataTable.TableName = ModificationSites.ElementAt(subjectIndex);
+            }
+            addtoDictionary();
+        }
+
+        public void addtoDictionary()
+        {
+            SubjectsHash = new Dictionary<string, Subject>();
+            for(int i = 0; i < ModificationSites.Count; i++)
+            {
+                SubjectsHash.Add(ModificationSites.ElementAt(i), _lstSubjects[i]);
+            }            
+        }
+
         public void runPreferenceEstimationProcess()
         {
-            //implement
-
             DataRow rowCombined;
             DataRow rowObservedCount;
             DataRow rowObservedFrequency;
@@ -224,11 +464,11 @@ namespace MAPResServer
             int numberOfPositivePositions = 0;
             int numberOfNegativePositions = 0;
             int positionInPeptide;
-            dtPeptides = dtProteins;
 
-            using (PreferenceResultSet prs = new PreferenceResultSet(firstPosition,lastPosition))
+            prepareForAnalysis();
+
+            using ( prs = new PreferenceResultSet(firstPosition, lastPosition))
             {
-                prepareForAnalysis();
 
                 int aminoIndex, position;
                 for (aminoIndex = 0; aminoIndex < TotalAminoAcids; aminoIndex++)
@@ -251,7 +491,7 @@ namespace MAPResServer
                     rowPercentageExpectedFrequency = prs.PercentageExpectedFrequency.NewRow();
                     rowCountPerAminoAcid = prs.CountPerAminoAcid.NewRow();
                     rowAminoAcidsAndPreferredPosition = prs.AminoAcidsAndPreferredPositions.NewRow();
-                    
+
                     rowObservedCount["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
                     rowObservedFrequency["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
                     rowPercentageObservedFrequency["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
@@ -265,7 +505,7 @@ namespace MAPResServer
                     rowPercentageExpectedFrequency["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
                     rowCountPerAminoAcid["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
                     rowAminoAcidsAndPreferredPosition["AminoAcid"] = AminoAcidsSet.ToList()[aminoIndex];
-                    
+
                     positionInPeptide = firstPosition;
                     for (position = 0; position < totalPositions; position++)
                     {
@@ -295,7 +535,7 @@ namespace MAPResServer
                         rowCombined["DOEC"] = _DOEC[aminoIndex, position];
                         rowCombined["Sigma"] = _Sigma[aminoIndex, position];
                         prs.CombinedResult.Rows.Add(rowCombined);
-                        
+
                         positionInPeptide++;
                     }
 
@@ -303,13 +543,13 @@ namespace MAPResServer
                     rowExpectedFrequency["Value"] = _ExpectedFrequency[aminoIndex];
                     rowPercentageExpectedFrequency["Value"] = _ExpectedFrequency[aminoIndex] * 100;
                     rowCountPerAminoAcid["Value"] = _CountPerAminoAcid[aminoIndex];
-                    
+
 
                     rowAminoAcidsAndPreferredPosition["PositivePositions"] = listOfAminoAcidsPostivePositions;
                     rowAminoAcidsAndPreferredPosition["NegativePositions"] = listOfAminoAcidsNegativePositions;
                     rowAminoAcidsAndPreferredPosition["NumberOfPositivePositions"] = numberOfPositivePositions;
                     rowAminoAcidsAndPreferredPosition["NumberOfNegativePositions"] = numberOfNegativePositions;
-                    
+
                     prs.CountPerAminoAcid.Rows.Add(rowCountPerAminoAcid);
                     prs.DeviationParameter.Rows.Add(rowDeviationParameter);
                     prs.ExpectedCount.Rows.Add(rowExpectedCount);
@@ -323,133 +563,9 @@ namespace MAPResServer
                     prs.S_PreferredSites.Rows.Add(rowS_PreferredSites);
                     prs.Sigma.Rows.Add(rowSigma);
                     prs.AminoAcidsAndPreferredPositions.Rows.Add(rowAminoAcidsAndPreferredPosition);
-                    
+
                 }
             }
-        }
-
-        public void SaveProject()
-        {
-            //implement
-            string root = @"D:\CoBi";
-            string subdir = @"D:\CoBi\";
-            subdir = String.Concat(subdir, userName,"\\");
-
-            if (!Directory.Exists(root))
-            {
-                Directory.CreateDirectory(root);
-            }
-
-            if (!Directory.Exists(subdir))
-            {
-                Directory.CreateDirectory(subdir);
-            }
-            subdir = String.Concat(subdir,userName ,".xml");
-
-            using (XmlTextWriter xml = new XmlTextWriter(subdir, null))
-                {
-                xml.WriteStartDocument();
-                xml.WriteStartElement("User Name");
-                xml.WriteElementString("", "\n");
-                xml.WriteString(userName);
-                xml.WriteElementString("", "\n");
-
-                xml.WriteStartElement("Analysis Details");
-                xml.WriteElementString("Analysis Title", AnalysisTitle);
-                xml.WriteElementString("","\n");
-                xml.WriteElementString("Analyst Name", AnalystName);
-                xml.WriteElementString("", "\n");
-
-                foreach (String str in ModificationSites)
-                {
-                    xml.WriteElementString("Modification Sites", str);
-                    xml.WriteElementString("", "\n");
-                }
-
-                foreach (String str in AminoAcidsSet)
-                {
-                    xml.WriteElementString("Amino Acid Set", str);
-                    xml.WriteElementString("", "\n");
-                }
-
-                xml.WriteEndElement();
-                xml.WriteEndDocument();
-            }
-        }
-
-        string AnalysisTitle;
-        string AnalystName;
-        int PeptideWindowSize;
-        THashSet<string> ModificationSites;
-        THashSet<string> AminoAcidsSet = new THashSet<string>();
-        string path;
-        public void setProjectProfileWithPseudoAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, THashSet<string> ListOfPseudoAminoAcids, string path)
-        {
-            this.AnalysisTitle = AnalysisTitle;
-            this.AnalystName = AnalystName;
-            this.PeptideWindowSize = PeptideWindowSize;
-            this.ModificationSites = ModificationSites;
-            AminoAcidsSet = ListOfPseudoAminoAcids;
-            this.path = path;
-            
-        }
-
-        public void setProjectProfileWithStandardAminoAcids(string AnalysisTitle, string AnalystName, int PeptideWindowSize, THashSet<string> ModificationSites, string path)
-        {
-            this.AnalysisTitle = AnalysisTitle;
-            this.AnalystName = AnalystName;
-            this.PeptideWindowSize = PeptideWindowSize;
-            this.ModificationSites = ModificationSites;
-            this.path = path;
-            getStandardAminoAcidSet();
-        }
-        public void getStandardAminoAcidSet()
-        {
-            AminoAcidsSet.Add("A");
-            AminoAcidsSet.Add("C");
-            AminoAcidsSet.Add("D");
-            AminoAcidsSet.Add("E");
-            AminoAcidsSet.Add("F");
-            AminoAcidsSet.Add("G");
-            AminoAcidsSet.Add("H");
-            AminoAcidsSet.Add("I");
-            AminoAcidsSet.Add("K");
-            AminoAcidsSet.Add("L");
-            AminoAcidsSet.Add("M");
-            AminoAcidsSet.Add("N");
-            AminoAcidsSet.Add("P");
-            AminoAcidsSet.Add("Q");
-            AminoAcidsSet.Add("R");
-            AminoAcidsSet.Add("S");
-            AminoAcidsSet.Add("T");
-            AminoAcidsSet.Add("V");
-            AminoAcidsSet.Add("W");
-            AminoAcidsSet.Add("Y");
-            AminoAcidsSet.Add("-");
-        }
-
-        Dictionary<String, String> users = new Dictionary<string, string>();
-        String userName;
-        public bool loginToServer(string UserName, string passWord)
-        {
-            String pWord;
-            addValues();
-            if (users.ContainsKey(UserName))
-            {
-                pWord = users[UserName];
-                if (pWord == passWord)
-                {
-                    userName = UserName;
-                    return true;
-                }
-            }
-      
-            return false;
-        }
-        public void addValues()
-        {
-            users.Add("Sajeel", "1234");
-            users.Add("Adnan", "12345");
         }
 
         int firstPosition;
@@ -476,6 +592,8 @@ namespace MAPResServer
             lastPosition = PeptideWindowSize;
             totalPositions = PeptideWindowSize + PeptideWindowSize + 1;
             TotalAminoAcids = AminoAcidsSet.Count();
+            dtProteins = GetProteinsDataTable();
+            dtPeptides = GetPeptidesDataTable();
 
             this._CountPerAminoAcid = new double[this.TotalAminoAcids];
             this._ExpectedCount = new double[this.TotalAminoAcids];
@@ -500,9 +618,9 @@ namespace MAPResServer
         {
             string aminoacid;
 
-            for(int i=0; i< dtPeptides.Rows.Count; i++)
+            for (int i = 0; i < dtPeptides.Rows.Count; i++)
             {
-                for(int j=0; j< totalPositions;j++)
+                for (int j = 0; j < totalPositions; j++)
                 {
                     aminoacid = dtPeptides.Rows[i][j + 3].ToString();
                     _ObservedCount[aminoacid.IndexOf(aminoacid), j]++;
@@ -512,9 +630,9 @@ namespace MAPResServer
 
         public void ComputeObservedFrequencyandSigma()
         {
-            for(int i=0; i< TotalAminoAcids; i++)
+            for (int i = 0; i < TotalAminoAcids; i++)
             {
-                for(int j=0; j< totalPositions; j++)
+                for (int j = 0; j < totalPositions; j++)
                 {
                     _ObservedFrequency[i, j] = _ObservedCount[i, j] / dtPeptides.Rows.Count;
                     _Sigma[i, j] = Math.Sqrt(_ObservedCount[i, j]);
@@ -546,7 +664,7 @@ namespace MAPResServer
 
         public void ComputeExpectedFrequencyAndExpectedCount()
         {
-            for(int i=0; i<TotalAminoAcids;i++)
+            for (int i = 0; i < TotalAminoAcids; i++)
             {
                 _ExpectedFrequency[i] = (_CountPerAminoAcid[i]) / _TotalNumberOfAminoAcidsInProteinDataSet;
                 _ExpectedCount[i] = dtPeptides.Rows.Count * _ExpectedFrequency[i];
@@ -559,15 +677,15 @@ namespace MAPResServer
             double dp, doec, sigma;
             int mark;
 
-            for(int i=0; i< TotalAminoAcids;i++)
+            for (int i = 0; i < TotalAminoAcids; i++)
             {
                 expectedFrequency = _ExpectedFrequency[i];
                 expectedCount = _ExpectedCount[i];
-                for(int j=0; j< totalPositions;j++)
+                for (int j = 0; j < totalPositions; j++)
                 {
                     dp = ((_ObservedFrequency[i, j] - expectedFrequency) / expectedFrequency) * 100;
 
-                    if(double.IsNaN(dp) == true)
+                    if (double.IsNaN(dp) == true)
                     {
                         mark = 0;
                     }
@@ -581,7 +699,7 @@ namespace MAPResServer
                     _DOEC[i, j] = doec;
 
                     sigma = _Sigma[i, j];
-                    if(doec >= (2 * sigma))
+                    if (doec >= (2 * sigma))
                     {
                         _SPreferredSites[i, j] = mark;
                     }
@@ -589,8 +707,128 @@ namespace MAPResServer
             }
         }
 
+        public List<string> getAminoAcidsandPreferredPositions()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class SequenceTransformation
+    {
+        public string ToIMSBSequence(string sequence)
+        {
+            char aminoacid;
+            StringBuilder imsbSequence = new StringBuilder();
+            for (int aminoIndex = 0; aminoIndex < sequence.Length; aminoIndex++)
+            {
+                aminoacid = sequence[aminoIndex];
+                imsbSequence.Append(aminoacid);
+                if (aminoIndex < sequence.Length - 1)
+                    imsbSequence.Append(',');
+            }
+            return imsbSequence.ToString();
+        }
+    }
+
+    [Serializable]
+    class Subject : IDisposable
+    {
+        private string _subjectName;
+        private DataTable _dtSites;
+        private DataTable _dtProtein;
+        private DataTable _dtPeptide;
+        private PreferenceResultSet _preferrenceResult;
+
+
+        public Subject(string subjectName)
+        {
+            _subjectName = subjectName;
+
+        }
+
+        public string SubjectName
+        {
+            set
+            {
+                _subjectName = value;
+            }
+            get
+            {
+                return _subjectName;
+            }
+        }
+
+        public DataTable SitesDataTable
+        {
+            set
+            {
+                _dtSites = value;
+            }
+            get
+            {
+                return _dtSites;
+            }
+        }
+
+        public DataTable ProteinDataTable
+        {
+            set
+            {
+                _dtProtein = value;
+            }
+            get
+            {
+                return _dtProtein;
+            }
+        }
+
+        public DataTable PeptideDataTable
+        {
+            set
+            {
+                _dtPeptide = value;
+            }
+            get
+            {
+                return _dtPeptide;
+            }
+        }
+
+        public PreferenceResultSet PreferredAnalysis
+        {
+            set
+            {
+                this._preferrenceResult = value;
+            }
+            get
+            {
+                return this._preferrenceResult;
+            }
+        }
+
+        public PreferenceResultSet PreferredSitesDataTable
+        {
+            set
+            {
+                this._preferrenceResult = value;
+            }
+            get
+            {
+                return _preferrenceResult;
+            }
+
+
+        }
+
+
+
+        public void Dispose()
+        {
+
+        }
+
         
-        public MAPResServer() { }
+        
     }
 
     class PreferenceResultSet : IDisposable
@@ -848,9 +1086,157 @@ namespace MAPResServer
             {
                 return dtCountPerAminoAcidTable;
             }
+        }   
+    }
+
+    class PeptideGenerator
+    {
+        private bool _useIMSBSequence;
+        private int _sizeOfOneSide;
+        private string _peptideSequence;
+        private readonly char[] sep = { ',' };
+        private int start, end;
+        private int _sizeOfPeptides;
+        private const string dash = "-";
+        private const string comma = ",";
+        private string amino;
+        private DataRow newRow = null;
+
+        public PeptideGenerator(bool useIMSBSequence, int sizeOfOneSide)
+        {
+            _sizeOfOneSide = sizeOfOneSide;
+            _sizeOfPeptides = sizeOfOneSide + sizeOfOneSide + 1;
+            _useIMSBSequence = useIMSBSequence;
         }
 
-        
-        
+        public bool UsingIMSBSequence
+        {
+            set
+            {
+                _useIMSBSequence = value;
+            }
+            get
+            {
+                return _useIMSBSequence;
+            }
+        }
+
+        public int SizeOfOneSide
+        {
+            set
+            {
+                _sizeOfOneSide = value;
+            }
+            get
+            {
+                return _sizeOfOneSide;
+            }
+        }
+
+        public string ToPeptide(string sequence, int position)
+        {
+            if (_useIMSBSequence == true)
+            {
+                GeneratePeptideFromIMSBSequence(sequence, position);
+            }
+            else
+            {
+                GeneratePeptideFromStandardSequence(sequence, position);
+            }
+
+            return this._peptideSequence;
+        }
+
+        public DataTable ToPeptide(DataTable dtSites)
+        {
+            using (DataTable dtPeptide = new DataTable("Peptide"))
+            {
+                CreatePeptideStructureIn(dtPeptide);
+
+                int position;
+                foreach (DataRow row in dtSites.Rows)
+                {
+                    newRow = dtPeptide.NewRow();
+                    position = int.Parse(row["Position"].ToString());
+                    newRow["Position"] = row["Position"];
+                    newRow["PID"] = row["PID"];
+                    if (_useIMSBSequence == true)
+                        newRow["PeptideSequence"] = ToPeptide(row["IMSB_Sequence"].ToString(), position);
+                    else
+                        newRow["PeptideSequence"] = ToPeptide(row["Sequence"].ToString(), position);
+                    dtPeptide.Rows.Add(newRow);
+                }
+                return dtPeptide;
+            }//end using
+        }
+
+        private void CreatePeptideStructureIn(DataTable dtPeptide)
+        {
+            dtPeptide.Columns.Add("PID");
+            dtPeptide.Columns.Add("Position");
+            dtPeptide.Columns.Add("PeptideSequence");
+
+            int i;
+            for (i = (-1 * this._sizeOfOneSide); i <= this._sizeOfOneSide; i++)
+            {
+                dtPeptide.Columns.Add("P" + i.ToString());
+            }
+        }
+
+        private void GeneratePeptide(string[] sequenceArray, int position)
+        {
+            position--; //Convert position number to index. Here after variable position will refer to the index in sequence
+            start = position - this._sizeOfOneSide;
+            end = position + this._sizeOfOneSide;
+            _peptideSequence = "";
+            int indexInPeptide = -1 * this._sizeOfOneSide;
+
+            for (int indexInSequence = start; indexInSequence <= end; indexInSequence++)
+            {
+                // transverse in sequence to get peptide
+                if (indexInSequence < 0)
+                    amino = dash;
+                else if (indexInSequence >= sequenceArray.Length)
+                    amino = dash;
+                else
+                    amino = sequenceArray[indexInSequence];
+
+                _peptideSequence = _peptideSequence + amino;
+
+                if (indexInSequence < end && _useIMSBSequence == true)
+                    _peptideSequence = _peptideSequence + ",";
+
+
+                if (newRow != null)
+                {
+                    newRow["P" + indexInPeptide.ToString()] = amino;
+                    indexInPeptide++;
+                }
+            }
+        }
+
+        private void GeneratePeptideFromIMSBSequence(string sequence, int position)
+        {
+            string[] sequenceArray;
+            sequenceArray = sequence.Split(sep);
+            GeneratePeptide(sequenceArray, position);
+        }
+
+        private void GeneratePeptideFromStandardSequence(string sequence, int position)
+        {
+            string[] sequenceArray;
+            sequenceArray = new string[sequence.Length];
+
+            for (int index = 0; index < sequence.Length; index++)
+            {
+                sequenceArray[index] = sequence[index].ToString();
+            }
+
+            GeneratePeptide(sequenceArray, position);
+        }
+
     }
+
+    
+
 }

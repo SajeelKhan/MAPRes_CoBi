@@ -1,0 +1,10 @@
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\bin\Debug\MAPResClient.exe.config
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\bin\Debug\MAPResClient.exe
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\bin\Debug\MAPResClient.pdb
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\bin\Debug\Thrift45.dll
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\obj\Debug\MAPResClient.csprojAssemblyReference.cache
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\obj\Debug\MAPResClient.csproj.CoreCompileInputs.cache
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\obj\Debug\MAPResClient.csproj.CopyComplete
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\obj\Debug\MAPResClient.exe
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\obj\Debug\MAPResClient.pdb
+C:\Users\Sajeel\source\repos\MAPResClient\MAPResClient\bin\Debug\FastMember.dll

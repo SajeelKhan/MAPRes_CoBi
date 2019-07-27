@@ -1,0 +1,12 @@
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\bin\Debug\Cobi_Cognitive_Architecture.exe.config
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\bin\Debug\Cobi_Cognitive_Architecture.exe
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\bin\Debug\Cobi_Cognitive_Architecture.pdb
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.csprojResolveAssemblyReference.cache
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.Properties.Resources.resources
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.csproj.GenerateResource.Cache
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.exe
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.pdb
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.MainScreen.resources
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.ResultScreen.resources
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\bin\Debug\ClarionLibrary.xml
+c:\users\m. anwaar khalid\documents\visual studio 2013\Projects\Cobi_Cognitive_Architecture\Cobi_Cognitive_Architecture\obj\Debug\Cobi_Cognitive_Architecture.csproj.ResolveComReference.cache
